@@ -188,6 +188,9 @@ void RestAqlHandler::parseQuery () {
   auto query = new Query(_applicationV8, false, _vocbase, queryString.c_str(), queryString.size(),
                          nullptr, nullptr, PART_MAIN);
   QueryResult res = query->parse();
+  
+  LOG_TRACE("query resut code is %d", res.code);
+
   if (res.code != TRI_ERROR_NO_ERROR) {
     LOG_ERROR("failed to instantiate the Query: %s", res.details.c_str());
     generateError(HttpResponse::BAD, res.code, res.details);

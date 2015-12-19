@@ -142,8 +142,9 @@ void RestCursorHandler::processQuery (TRI_json_t const* json) {
                              TRI_CopyJson(TRI_UNKNOWN_MEM_ZONE, options.json()), 
                              triagens::aql::PART_MAIN);
 
-  registerQuery(&query); 
+  registerQuery(&query);
   auto queryResult = query.execute(_queryRegistry);
+  LOG_TRACE("query rsult %d", queryResult.code);
   unregisterQuery(); 
 
   if (queryResult.code != TRI_ERROR_NO_ERROR) {
@@ -151,7 +152,7 @@ void RestCursorHandler::processQuery (TRI_json_t const* json) {
         (queryResult.code == TRI_ERROR_QUERY_KILLED && wasCanceled())) {
       THROW_ARANGO_EXCEPTION(TRI_ERROR_REQUEST_CANCELED);
     }
-
+    LOG_TRACE("throw exection message");
     THROW_ARANGO_EXCEPTION_MESSAGE(queryResult.code, queryResult.details);
   }
 
@@ -746,18 +747,23 @@ void RestCursorHandler::createCursor () {
     processQuery(json.get());
   }  
   catch (triagens::basics::Exception const& ex) {
+    LOG_TRACE("c0");
     unregisterQuery(); 
+    LOG_TRACE("%d", HttpResponse::responseCode(ex.code()) );
     generateError(HttpResponse::responseCode(ex.code()), ex.code(), ex.what());
   }
   catch (std::bad_alloc const&) {
+    LOG_TRACE("c1");
     unregisterQuery(); 
     generateError(HttpResponse::SERVER_ERROR, TRI_ERROR_OUT_OF_MEMORY);
   }
   catch (std::exception const& ex) {
+    LOG_TRACE("c2");
     unregisterQuery(); 
     generateError(HttpResponse::SERVER_ERROR, TRI_ERROR_INTERNAL, ex.what());
   }
   catch (...) {
+    LOG_TRACE("c3");
     unregisterQuery(); 
     generateError(HttpResponse::SERVER_ERROR, TRI_ERROR_INTERNAL);
   }

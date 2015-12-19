@@ -445,6 +445,7 @@ std::string Query::extractRegion (int line,
 void Query::registerError (int code,
                            char const* details) {
 
+  LOG_TRACE("registerError %d", code);
   TRI_ASSERT(code != TRI_ERROR_NO_ERROR);
 
   if (details == nullptr) {
@@ -504,6 +505,7 @@ void Query::registerWarning (int code,
 ////////////////////////////////////////////////////////////////////////////////
 
 QueryResult Query::prepare (QueryRegistry* registry) {
+  LOG_TRACE("prepare query");
   try {
     init();
     enterState(PARSING);
@@ -512,7 +514,9 @@ QueryResult Query::prepare (QueryRegistry* registry) {
     std::unique_ptr<ExecutionPlan> plan;
     
     if (_queryString != nullptr) {
+      LOG_TRACE("before parser->parse");
       parser->parse(false);
+      LOG_TRACE("after parser->parse");
       // put in bind parameters
       parser->ast()->injectBindParameters(_bindParameters);
     }
@@ -616,18 +620,22 @@ QueryResult Query::prepare (QueryRegistry* registry) {
     return QueryResult();
   }
   catch (triagens::basics::Exception const& ex) {
+    LOG_TRACE("catch 0 %d", ex.code() );
     cleanupPlanAndEngine(ex.code());
     return QueryResult(ex.code(), ex.message() + getStateString());
   }
   catch (std::bad_alloc const&) {
+    LOG_TRACE("catch 1");
     cleanupPlanAndEngine(TRI_ERROR_OUT_OF_MEMORY);
     return QueryResult(TRI_ERROR_OUT_OF_MEMORY, TRI_errno_string(TRI_ERROR_OUT_OF_MEMORY) + getStateString());
   }
   catch (std::exception const& ex) {
+    LOG_TRACE("catch 2");
     cleanupPlanAndEngine(TRI_ERROR_INTERNAL);
     return QueryResult(TRI_ERROR_INTERNAL, ex.what() + getStateString());
   }
   catch (...) {
+    LOG_TRACE("catch 3");
     cleanupPlanAndEngine(TRI_ERROR_INTERNAL);
     return QueryResult(TRI_ERROR_INTERNAL, TRI_errno_string(TRI_ERROR_INTERNAL) + getStateString());
   }
@@ -638,6 +646,7 @@ QueryResult Query::prepare (QueryRegistry* registry) {
 ////////////////////////////////////////////////////////////////////////////////
 
 QueryResult Query::execute (QueryRegistry* registry) {
+  LOG_TRACE("0");
   try {
     bool useQueryCache = canUseQueryCache();
     uint64_t queryStringHash = 0;
@@ -661,12 +670,15 @@ QueryResult Query::execute (QueryRegistry* registry) {
         return res;
       } 
     }
-
+    LOG_TRACE("1");
     QueryResult res = prepare(registry);
 
+    LOG_TRACE("2");
     if (res.code != TRI_ERROR_NO_ERROR) {
+      LOG_TRACE("3");
       return res;
     }
+    LOG_TRACE("4");
 
     if (useQueryCache && (_isModificationQuery || ! _warnings.empty() || ! _ast->root()->isCacheable())) {
       useQueryCache = false;
@@ -759,18 +771,22 @@ QueryResult Query::execute (QueryRegistry* registry) {
     return result;
   }
   catch (triagens::basics::Exception const& ex) {
+    LOG_TRACE("c0");
     cleanupPlanAndEngine(ex.code());
     return QueryResult(ex.code(), ex.message() + getStateString());
   }
   catch (std::bad_alloc const&) {
+    LOG_TRACE("c1");
     cleanupPlanAndEngine(TRI_ERROR_OUT_OF_MEMORY);
     return QueryResult(TRI_ERROR_OUT_OF_MEMORY, TRI_errno_string(TRI_ERROR_OUT_OF_MEMORY) + getStateString());
   }
   catch (std::exception const& ex) {
+    LOG_TRACE("c2");
     cleanupPlanAndEngine(TRI_ERROR_INTERNAL);
     return QueryResult(TRI_ERROR_INTERNAL, ex.what() + getStateString());
   }
   catch (...) {
+    LOG_TRACE("c3");
     cleanupPlanAndEngine(TRI_ERROR_INTERNAL);
     return QueryResult(TRI_ERROR_INTERNAL, TRI_errno_string(TRI_ERROR_INTERNAL) + getStateString());
   }
@@ -925,23 +941,31 @@ QueryResultV8 Query::executeV8 (v8::Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////////////
 
 QueryResult Query::parse () {
+  LOG_TRACE("1");
   try {
+  LOG_TRACE("2");
     init();
+  LOG_TRACE("3");
     Parser parser(this);
+    LOG_TRACE("4");
     return parser.parse(true);
   }
   catch (triagens::basics::Exception const& ex) {
+    LOG_TRACE("5");
     return QueryResult(ex.code(), ex.message());
   }
   catch (std::bad_alloc const&) {
+    LOG_TRACE("6");
     cleanupPlanAndEngine(TRI_ERROR_OUT_OF_MEMORY);
     return QueryResult(TRI_ERROR_OUT_OF_MEMORY, TRI_errno_string(TRI_ERROR_OUT_OF_MEMORY));
   }
   catch (std::exception const& ex) {
+    LOG_TRACE("7");
     cleanupPlanAndEngine(TRI_ERROR_INTERNAL);
     return QueryResult(TRI_ERROR_INTERNAL, ex.what());
   }
   catch (...) {
+    LOG_TRACE("8");
     return QueryResult(TRI_ERROR_OUT_OF_MEMORY, TRI_errno_string(TRI_ERROR_OUT_OF_MEMORY));
   }
 }

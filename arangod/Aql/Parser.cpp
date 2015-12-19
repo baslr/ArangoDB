@@ -27,6 +27,7 @@
 /// @author Copyright 2012-2013, triAGENS GmbH, Cologne, Germany
 ////////////////////////////////////////////////////////////////////////////////
 
+#include "Basics/logging.h"
 #include "Aql/Parser.h"
 #include "Aql/AstNode.h"
 #include "Aql/QueryResult.h"
@@ -92,24 +93,34 @@ bool Parser::configureWriteQuery (AstNode const* collectionNode,
 
 QueryResult Parser::parse (bool withDetails) {
   char const* q = queryString();
+  LOG_TRACE("parser parse %s", q);
 
   if (q == nullptr || *q == '\0') {
     THROW_ARANGO_EXCEPTION(TRI_ERROR_QUERY_EMPTY);
   }
-
+  LOG_TRACE("1");
   // start main scope
   auto scopes = _ast->scopes();
+  LOG_TRACE("2");
   scopes->start(AQL_SCOPE_MAIN);
-  
+  LOG_TRACE("3");
   Aqllex_init(&_scanner);
+  LOG_TRACE("4");
   Aqlset_extra(this, _scanner);
+  LOG_TRACE("5");
 
   try {
     // parse the query string
+    LOG_TRACE("5.1");
     if (Aqlparse(this)) {
+      LOG_TRACE("5.2");
+
+      LOG_TRACE("parsing AQL query failed");
+
       // lexing/parsing failed
       THROW_ARANGO_EXCEPTION(TRI_ERROR_QUERY_PARSE);
     }
+    LOG_TRACE("5.3");
 
     Aqllex_destroy(_scanner);
   }
@@ -117,11 +128,14 @@ QueryResult Parser::parse (bool withDetails) {
     Aqllex_destroy(_scanner);
     throw;
   }
+  LOG_TRACE("6");
  
   // end main scope
   scopes->endCurrent();
+  LOG_TRACE("7");
 
   TRI_ASSERT(scopes->numActive() == 0);
+  LOG_TRACE("8");
 
   QueryResult result;
 
@@ -130,6 +144,7 @@ QueryResult Parser::parse (bool withDetails) {
     result.bindParameters  = _ast->bindParameters();
     result.json            = _ast->toJson(TRI_UNKNOWN_MEM_ZONE, false);
   }
+  LOG_TRACE("9");
 
   return result;
 }
@@ -143,6 +158,7 @@ void Parser::registerParseError (int errorCode,
                                  char const* data,
                                  int line,
                                  int column) {
+  LOG_TRACE("registerParseError %d", errorCode);
   char buffer[512];
   snprintf(buffer,
            sizeof(buffer),
@@ -162,6 +178,7 @@ void Parser::registerParseError (int errorCode,
                                  int column) {
   TRI_ASSERT(errorCode != TRI_ERROR_NO_ERROR);
   TRI_ASSERT(data != nullptr);
+  LOG_TRACE("registerParseError %d", errorCode);
 
   // extract the query string part where the error happened
   std::string const region(_query->extractRegion(line, column));
@@ -205,6 +222,7 @@ void Parser::registerParseError (int errorCode,
 
 void Parser::registerError (int errorCode,
                             char const* data) {
+  LOG_TRACE("parser register error %d", errorCode);
   _query->registerError(errorCode, data);
 }
 
