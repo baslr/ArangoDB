@@ -525,6 +525,16 @@ ModificationOptions ExecutionPlan::createModificationOptions(
           options.nullMeansRemove = value->isFalse();
         } else if (name == "mergeObjects") {
           options.mergeObjects = value->isTrue();
+        } else if (value->type == NODE_TYPE_ARRAY &&
+          name == "binary" &&
+          value->numMembers() ) {
+          size_t n = value->numMembers();
+          LOG(INFO) << "value members " << n;
+          for(size_t i = 0; i < n; i++) {
+            auto x = value->getMember(i);
+            LOG(INFO) << "array " << i << " name " << x->getString();
+          }
+          options.binary = true;
         }
       }
     }
