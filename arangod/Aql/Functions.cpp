@@ -3837,15 +3837,59 @@ AqlValue Functions::IsSameCollection(
 
 AqlValue Functions::ContainsHex(arangodb::aql::Query* query, arangodb::AqlTransaction* trx, VPackFunctionParameters const& parameters) {
 
-
-
-  AqlValue value     = ExtractFunctionParameterValue(trx, parameters, 0);
+  AqlValue binary    = ExtractFunctionParameterValue(trx, parameters, 0);
   AqlValue hexString = ExtractFunctionParameterValue(trx, parameters, 1);
 
+  VPackSlice s = binary.slice();
 
-  LOG(INFO) << "ContainsHex:v1: " << value.isString();
-  LOG(INFO) << "ContainsHex:v2: " << hexString.isString();
 
+  LOG(INFO) << "ContainsHex:slice is binary: " << s.isBinary();
+  LOG(INFO) << "ContainsHex:slice is string: " << s.isString();
+
+  LOG(INFO) << "ContainsHex:isString():v1: " << binary.isString();
+  LOG(INFO) << "ContainsHex:isString():v2: " << hexString.isString();
+  LOG(INFO) << "ContainsHex:isBinary():v1: " << binary.isBinary();
+  LOG(INFO) << "ContainsHex:isBinary():v2: " << hexString.isBinary();
+
+
+
+  VPackBuilder b;
+  b.add(VPackValue(VPackValueType::Object));
+  b.add( "x", VPackValue("ffxxffxx", VPackValueType::Binary ) );
+  b.close();
+
+  VPackSlice sl = b.slice();
+
+  LOG(INFO) << "new slice is binary " << sl.isBinary();
+  LOG(INFO) << "new slice is object " << sl.isObject();
+
+  if (sl.isObject() ) {
+      VPackSlice val = sl.get("x");
+
+      if (val.isBinary() ) {
+          LOG(INFO) << "dafud sliced the binary shit out of it xoxoxoxo";
+
+          /*
+          Options o;
+          o.unsupportedTypeBehavior = Options::UnsupportedTypeBehavior::NullifyUnsupportedType;
+          std::cout << val.toJson(&o)<< std::endl;
+          */
+
+          VPackValueLength vl = val.getBinaryLength();
+
+          LOG(INFO) << vl;
+
+          LOG(INFO) << "";
+
+          uint8_t const* pBytes = val.getBinary(vl);
+
+          for(unsigned int i = 0; i < vl; i++) {
+              LOG(INFO) << pBytes[i];
+          } // for
+      } // if
+  } // if
+
+  LOG(INFO) << "------------------------------------------------------";
 
   return AqlValue(arangodb::basics::VelocyPackHelper::NullValue());
 
