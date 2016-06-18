@@ -264,6 +264,9 @@ struct Functions {
   static AqlValue IsSameCollection(arangodb::aql::Query*,
                                   arangodb::AqlTransaction*,
                                   VPackFunctionParameters const&);
+
+
+  static AqlValue ContainsHex(arangodb::aql::Query*, arangodb::AqlTransaction*, VPackFunctionParameters const&);
 };
 }
 }

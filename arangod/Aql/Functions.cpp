@@ -30,6 +30,7 @@
 
 #include "Aql/Function.h"
 #include "Aql/Query.h"
+#include "Logger/Logger.h"
 #include "Basics/Exceptions.h"
 #include "Basics/ScopeGuard.h"
 #include "Basics/StringBuffer.h"
@@ -3829,4 +3830,23 @@ AqlValue Functions::IsSameCollection(
   RegisterWarning(query, "IS_SAME_COLLECTION",
                   TRI_ERROR_QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH);
   return AqlValue(arangodb::basics::VelocyPackHelper::NullValue());
+}
+
+
+// (value, hexString)
+
+AqlValue Functions::ContainsHex(arangodb::aql::Query* query, arangodb::AqlTransaction* trx, VPackFunctionParameters const& parameters) {
+
+
+
+  AqlValue value     = ExtractFunctionParameterValue(trx, parameters, 0);
+  AqlValue hexString = ExtractFunctionParameterValue(trx, parameters, 1);
+
+
+  LOG(INFO) << "ContainsHex:v1: " << value.isString();
+  LOG(INFO) << "ContainsHex:v2: " << hexString.isString();
+
+
+  return AqlValue(arangodb::basics::VelocyPackHelper::NullValue());
+
 }

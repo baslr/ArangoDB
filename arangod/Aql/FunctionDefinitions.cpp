@@ -446,6 +446,13 @@ struct FunctionDefiner {
               false, false, true, &Functions::CurrentDatabase});
     add({"COLLECTION_COUNT", "AQL_COLLECTION_COUNT", "chs", false, false,
               true, false, true, &Functions::CollectionCount, NotInCluster});
+
+
+    // isCacheable, isDeterministic, canThrow, canRunOnDBServer, canPassArgumentsByReference
+
+    add({"CONTAINS_HEX", "AQL_CONTAINS_HEX", "s,s", true, true, false, true, true, &Functions::ContainsHex});
+
+
   }
 
   void add(Function const& func) {

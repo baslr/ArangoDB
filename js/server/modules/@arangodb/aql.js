@@ -5536,6 +5536,14 @@ function AQL_DATE_FORMAT (value, format) {
   }
 }
 
+// CONTAINS(text, search, return-index)
+function AQL_CONTAINS_HEX(value, hexString) {
+  return 'hexhex';
+}
+
+exports.AQL_CONTAINS_HEX = AQL_CONTAINS_HEX;
+
+
 exports.FCALL_USER = FCALL_USER;
 exports.KEYS = KEYS;
 exports.GET_INDEX = GET_INDEX;
