@@ -266,6 +266,9 @@ struct AqlValue final {
   /// @brief whether or not the value contains a boolean value
   bool isBoolean() const;
 
+  /// @brief whether or not the value contains a binary value
+  bool isBinary() const;
+
   /// @brief whether or not the value is a number
   bool isNumber() const;
   

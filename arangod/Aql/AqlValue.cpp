@@ -90,6 +90,15 @@ bool AqlValue::isBoolean() const {
   return slice().isBoolean();
 }
 
+/// @brief whether or not the value is a binary value
+bool AqlValue::isBinary() const {
+  AqlValueType t = type();
+  if (t == DOCVEC || t == RANGE) {
+    return false;
+  }
+  return slice().isBinary();
+}
+
 /// @brief whether or not the value is a number
 bool AqlValue::isNumber() const {
   AqlValueType t = type();
