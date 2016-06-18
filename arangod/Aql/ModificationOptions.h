@@ -41,7 +41,8 @@ struct ModificationOptions {
         nullMeansRemove(false),
         mergeObjects(true),
         ignoreDocumentNotFound(false),
-        readCompleteInput(true) {}
+        readCompleteInput(true),
+        binary(false) {}
 
   void toJson(arangodb::basics::Json&, TRI_memory_zone_t*) const;
 
@@ -53,6 +54,7 @@ struct ModificationOptions {
   bool mergeObjects;
   bool ignoreDocumentNotFound;
   bool readCompleteInput;
+  bool binary;
 };
 
 }  // namespace arangodb::aql

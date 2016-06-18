@@ -41,18 +41,20 @@ ModificationOptions::ModificationOptions(Json const& json) {
       JsonHelper::getBooleanValue(obj.json(), "ignoreDocumentNotFound", false);
   readCompleteInput =
       JsonHelper::getBooleanValue(obj.json(), "readCompleteInput", true);
+  binary = JsonHelper::getBooleanValue(obj.json(), "binary", false);
 }
 
 void ModificationOptions::toJson(arangodb::basics::Json& json,
                                  TRI_memory_zone_t* zone) const {
   Json flags;
 
-  flags = Json(Json::Object, 6)("ignoreErrors", Json(ignoreErrors))(
+  flags = Json(Json::Object, 7)("ignoreErrors", Json(ignoreErrors))(
       "waitForSync", Json(waitForSync))("nullMeansRemove",
                                         Json(nullMeansRemove))(
       "mergeObjects", Json(mergeObjects))("ignoreDocumentNotFound",
                                           Json(ignoreDocumentNotFound))(
-      "readCompleteInput", Json(readCompleteInput));
+      "readCompleteInput", Json(readCompleteInput))(
+          "binary", Json(binary));
 
   json("modificationFlags", flags);
 }
@@ -65,4 +67,5 @@ void ModificationOptions::toVelocyPack(VPackBuilder& builder) const {
   builder.add("mergeObjects", VPackValue(mergeObjects));
   builder.add("ignoreDocumentNotFound", VPackValue(ignoreDocumentNotFound));
   builder.add("readCompleteInput", VPackValue(readCompleteInput));
+  builder.add("binary", VPackValue(binary));
 }
