@@ -28,6 +28,7 @@
 #include "Basics/Exceptions.h"
 #include "Cluster/ClusterMethods.h"
 #include "VocBase/vocbase.h"
+#include "Logger/Logger.h"
 
 #include <velocypack/Builder.h>
 #include <velocypack/Collection.h>
@@ -476,11 +477,16 @@ AqlItemBlock* InsertBlock::work(std::vector<AqlItemBlock*>& blocks) {
 }
 
 UpdateBlock::UpdateBlock(ExecutionEngine* engine, UpdateNode const* ep)
-    : ModificationBlock(engine, ep) {}
+    : ModificationBlock(engine, ep) {
+      LOG(INFO) << "UpdateBlock::UpdateBlock()";
+    }
 
 /// @brief the actual work horse for inserting data
 AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
+  LOG(INFO) << "UpdateBlock::work()";
   size_t const count = countBlocksRows(blocks);
+
+  LOG(INFO) << "count: " << count;
 
   if (count == 0) {
     return nullptr;
@@ -520,6 +526,9 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
   options.returnOld = (producesOutput && ep->_outVariableOld != nullptr);
   options.returnNew = (producesOutput && ep->_outVariableNew != nullptr);
   options.ignoreRevs = true;
+
+  LOG(INFO) << "option for binary " << ep->_options.binary;
+  
         
   // loop over all blocks
   size_t dstRow = 0;
