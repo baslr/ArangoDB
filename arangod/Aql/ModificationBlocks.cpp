@@ -30,6 +30,7 @@
 #include "VocBase/vocbase.h"
 #include "Logger/Logger.h"
 
+#include <bitset>
 #include <velocypack/Builder.h>
 #include <velocypack/Collection.h>
 #include <velocypack/Slice.h>
@@ -504,6 +505,7 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
       (ep->_outVariableOld != nullptr || ep->_outVariableNew != nullptr);
 
   bool const hasKeyVariable = (ep->_inKeyVariable != nullptr);
+  LOG(INFO) << "hasKeyVariable " << hasKeyVariable;
   std::string errorMessage;
   VPackBuilder keyBuilder;
   VPackBuilder object;
@@ -539,6 +541,8 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
 
     size_t const n = res->size();
     bool isMultiple = (n > 1);
+
+    LOG(INFO) << "isMultiple " << isMultiple << " n " << n;
     if (isMultiple) {
       object.clear();
       object.openArray();
@@ -547,6 +551,14 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
     // loop over the complete block
     for (size_t i = 0; i < n; ++i) {
       AqlValue const& a = res->getValueReference(i, docRegisterId);
+
+      if (a.isObject()) {
+        LOG(INFO) << "AqlValue is Object";
+        VPackSlice s = a.slice();
+
+        LOG(INFO) << "key " << s.get("_key");
+        LOG(INFO) << "hex " << s.get("hex");
+      }
 
       int errorCode = TRI_ERROR_NO_ERROR;
       std::string key;
@@ -569,13 +581,76 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
 
       if (errorCode == TRI_ERROR_NO_ERROR) {
         if (hasKeyVariable) {
+
+          LOG(INFO) << "we are here when we update";
+
           keyBuilder.clear();
           keyBuilder.openObject();
           keyBuilder.add(StaticStrings::KeyString, VPackValue(key));
           keyBuilder.close();
 
-          VPackBuilder tmp = VPackCollection::merge(
-              a.slice(), keyBuilder.slice(), false, false);
+          // scann through the update document and catch some binary
+          VPackBuilder newDoc;
+          newDoc.openObject();
+          VPackSlice   newDocSlice = a.slice();
+
+          for(unsigned int j = 0; j < newDocSlice.length(); j++) {
+            LOG(INFO) << "would handle slice " << j << " " << newDocSlice.valueAt(j).typeName();
+            VPackSlice kSl = newDocSlice.getNthKey(j, false);
+
+            if (kSl.isString() && "hex" == kSl.copyString() ) {
+              LOG(INFO) << "key is hex ";
+
+              VPackSlice value      = newDocSlice.valueAt(j);
+              VPackValueLength nStr = value.getStringLength();
+
+              LOG(INFO) << "VPackValueLength " << nStr;
+
+              char const* pStr      = value.getString(nStr);
+
+              uint bytesLength = nStr / 2;
+              if (nStr % 2 == 1) bytesLength++; // 5 chars -> 3 bytes -> equal 6 chars
+
+              LOG(INFO) << "in string length is " << nStr;
+
+              uint8_t *pBytes = new uint8_t[bytesLength];
+              uint idx = 0;
+
+              // iterate over the string
+              for(uint j = 0; j < nStr; j++) {
+                  uint8_t var = (uint8_t)pStr[j];
+
+                  if (47 < var && var < 58) {
+                      var -= 48;
+                  } else if (96 < var && var < 103) {
+                      var -= 87;
+                  }
+
+                  LOG(INFO) << "bits " << std::bitset<8>(var);
+
+                  if ( j % 2 == 0) {
+                    pBytes[idx] = (var << 4);
+                  } else {
+                      pBytes[idx] |= var;
+                      idx++;
+                  }
+              } // for
+
+              LOG(INFO) << "String -> Binary:";
+              for(j = 0; j < bytesLength; j++) {
+                LOG(INFO) << std::bitset<8>(pBytes[j]);
+              }
+
+              newDoc.add(kSl.copyString(),  VPackValuePair(pBytes, bytesLength) );
+
+              // newDoc.add(kSl.copyString(), VPackValue("here we have binary u know") );
+            } else {
+              newDoc.add(kSl.copyString(), newDocSlice.valueAt(j) );
+            }
+          } // for
+          newDoc.close();
+
+          VPackBuilder tmp = VPackCollection::merge(newDoc.slice(), keyBuilder.slice(), false, false);
           if (isMultiple) {
             object.add(tmp.slice());
           } else {
@@ -654,7 +729,7 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
     // now free it already
     (*it) = nullptr;
     delete res;
-  }
+  } // for
 
   return result.release();
 }
