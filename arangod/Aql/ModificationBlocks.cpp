@@ -565,7 +565,7 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
 
       if (a.isObject()) {
         // value is an object
-        if (hasKeyVariable) {
+        if (hasKeyVariable) { // its the key expression update key-expression with {} in collection
           // seperate key specification
           AqlValue const& k = res->getValueReference(i, keyRegisterId);
           errorCode = extractKey(k, key);
@@ -580,7 +580,12 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
       }
 
       if (errorCode == TRI_ERROR_NO_ERROR) {
-        if (hasKeyVariable) {
+
+        // here examine variable a thats an object if it has 'hex'
+        // later we use the option to examine which fields are used
+        // to extract the hex value
+
+        if (hasKeyVariable) { // we have a sepearte _key value
 
           LOG(INFO) << "we are here when we update";
 
@@ -641,9 +646,9 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
                 LOG(INFO) << std::bitset<8>(pBytes[j]);
               }
 
-              newDoc.add(kSl.copyString(),  VPackValuePair(pBytes, bytesLength) );
+             // newDoc.add(kSl.copyString(),  VPackValuePair(pBytes, bytesLength) );
 
-              // newDoc.add(kSl.copyString(), VPackValue("here we have binary u know") );
+              newDoc.add(kSl.copyString(), VPackValue("here we have binary u know") );
             } else {
               newDoc.add(kSl.copyString(), newDocSlice.valueAt(j) );
             }
@@ -659,12 +664,13 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
         }
         else {
           // use original slice for updating
+          LOG(INFO) << "use original slice for updating";
           object.add(a.slice());
         }
       } else {
         handleResult(errorCode, ep->_options.ignoreErrors, &errorMessage);
       }
-    }
+    } // for
 
     if (isMultiple) {
       object.close();
