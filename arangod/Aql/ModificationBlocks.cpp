@@ -646,9 +646,9 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
                 LOG(INFO) << std::bitset<8>(pBytes[j]);
               }
 
-             // newDoc.add(kSl.copyString(),  VPackValuePair(pBytes, bytesLength) );
+              newDoc.add(kSl.copyString(),  VPackValuePair(pBytes, bytesLength) );
 
-              newDoc.add(kSl.copyString(), VPackValue("here we have binary u know") );
+            //  newDoc.add(kSl.copyString(), VPackValue("here we have binary u know") );
             } else {
               newDoc.add(kSl.copyString(), newDocSlice.valueAt(j) );
             }

@@ -1035,6 +1035,8 @@ static TRI_datafile_t* OpenDatafile(char const* filename, bool ignoreErrors) {
   TRI_stat_t status;
   void* mmHandle;
 
+  LOG(INFO) << "OPEN_DATAFILE " << filename;
+
   // this function must not be called for non-physical datafiles
   TRI_ASSERT(filename != nullptr);
 

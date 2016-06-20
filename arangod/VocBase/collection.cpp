@@ -1639,6 +1639,9 @@ void VocbaseCollectionInfo::rename(char const* name) {
 }
 
 void VocbaseCollectionInfo::setRevision(TRI_voc_rid_t rid, bool force) {
+
+  LOG(INFO) << "VocbaseCollectionInfo::setRevision " << rid << " force " << force << " _revision " << _revision;
+
   if (force || rid > _revision) {
     _revision = rid;
   }

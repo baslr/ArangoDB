@@ -791,6 +791,21 @@ static int OpenIteratorHandleDocumentMarker(TRI_df_marker_t const* marker,
   TRI_voc_rid_t revisionId;
 
   Transaction::extractKeyAndRevFromDocument(slice, keySlice, revisionId);
+
+  if ("22769807" == keySlice.copyString() ) {
+    LOG(INFO) << "found key " << keySlice.copyString() << " has hex? " << slice.hasKey("hex");
+
+    if (slice.hasKey("hex")) {
+      VPackSlice hex = slice.get("hex");
+
+      LOG(INFO) << "hex.isBinary(): " << hex.isBinary();
+
+      LOG(INFO) << "Revision " << revisionId;
+
+      // revisionId = 24146064;
+    }
+  }
+
  
   SetRevision(document, revisionId, false);
   document->_keyGenerator->track(keySlice.copyString());
