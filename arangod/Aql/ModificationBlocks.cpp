@@ -30,6 +30,7 @@
 #include "VocBase/vocbase.h"
 #include "Logger/Logger.h"
 
+#include <signal.h>
 #include <bitset>
 #include <velocypack/Builder.h>
 #include <velocypack/Collection.h>
@@ -645,6 +646,8 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
               for(j = 0; j < bytesLength; j++) {
                 LOG(INFO) << std::bitset<8>(pBytes[j]);
               }
+
+              // raise(SIGSEGV);
 
               newDoc.add(kSl.copyString(),  VPackValuePair(pBytes, bytesLength) );
 
