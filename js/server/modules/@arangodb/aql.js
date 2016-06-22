@@ -2777,6 +2777,17 @@ function AQL_IS_DATESTRING (value) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/// @brief test if value is binary
+/// this doesnt work in javascript
+/// returns a bool
+////////////////////////////////////////////////////////////////////////////////
+
+function AQL_IS_BINARY (value) {
+  'use strict';
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /// @brief integer closest to value, not greater than value
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -5619,6 +5630,7 @@ exports.AQL_IS_LIST = AQL_IS_ARRAY; // alias
 exports.AQL_IS_OBJECT = AQL_IS_OBJECT;
 exports.AQL_IS_DOCUMENT = AQL_IS_OBJECT; // alias
 exports.AQL_IS_DATESTRING = AQL_IS_DATESTRING;
+exports.AQL_IS_BINARY = AQL_IS_BINARY;
 exports.AQL_FLOOR = AQL_FLOOR;
 exports.AQL_CEIL = AQL_CEIL;
 exports.AQL_ROUND = AQL_ROUND;

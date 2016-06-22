@@ -71,6 +71,8 @@ struct Functions {
                           VPackFunctionParameters const&);
   static AqlValue IsObject(arangodb::aql::Query*, arangodb::AqlTransaction*,
                            VPackFunctionParameters const&);
+  static AqlValue IsBinary(arangodb::aql::Query*, arangodb::AqlTransaction*,
+                           VPackFunctionParameters const&);
   static AqlValue Typename(arangodb::aql::Query*, arangodb::AqlTransaction*,
                            VPackFunctionParameters const&);
   static AqlValue ToNumber(arangodb::aql::Query*, arangodb::AqlTransaction*,

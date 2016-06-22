@@ -141,6 +141,8 @@ struct FunctionDefiner {
 
     add({"IS_DATESTRING", "AQL_IS_DATESTRING", ".", true,
                                true, false, true, true});
+    add({"IS_BINARY", "AQL_IS_BINARY", ".", true, true,
+                              false, true, true, &Functions::IsBinary});
     add({"TYPENAME", "AQL_TYPENAME", ".", true,
                                true, false, true, true, &Functions::Typename});
   }

@@ -867,6 +867,14 @@ AqlValue Functions::IsObject(arangodb::aql::Query* query,
   return AqlValue(a.isObject());
 }
 
+/// @brief function IS_BINARY
+AqlValue Functions::IsBinary(arangodb::aql::Query* query,
+                             arangodb::AqlTransaction* trx,
+                             VPackFunctionParameters const& parameters) {
+  AqlValue a = ExtractFunctionParameterValue(trx, parameters, 0);
+  return AqlValue(a.isBinary());
+}
+
 /// @brief function TYPENAME
 AqlValue Functions::Typename(arangodb::aql::Query* query,
                              arangodb::AqlTransaction* trx,
