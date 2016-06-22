@@ -650,7 +650,6 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
         }
         else {
           // use original slice for updating
-          LOG(INFO) << "use original slice for updating";
           object.add(newDocSlice);
         }
       } else {
