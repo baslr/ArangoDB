@@ -581,27 +581,13 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
       }
 
       if (errorCode == TRI_ERROR_NO_ERROR) {
+        VPackSlice   newDocSlice = a.slice();
+        VPackBuilder newDoc;
 
-        // here examine variable a thats an object if it has 'hex'
-        // later we use the option to examine which fields are used
-        // to extract the hex value
-
-        if (hasKeyVariable) { // we have a sepearte _key value
-
-          LOG(INFO) << "we are here when we update";
-
-          keyBuilder.clear();
-          keyBuilder.openObject();
-          keyBuilder.add(StaticStrings::KeyString, VPackValue(key));
-          keyBuilder.close();
-
-          // scann through the update document and catch some binary
-          VPackBuilder newDoc;
+        if (ep->_options.binary) {
           newDoc.openObject();
-          VPackSlice   newDocSlice = a.slice();
-
-          for(unsigned int j = 0; j < newDocSlice.length(); j++) {
-            LOG(INFO) << "would handle slice " << j << " " << newDocSlice.valueAt(j).typeName();
+          for(uint8_t j = 0; j < newDocSlice.length(); j++) {
+            LOG(INFO) << "Handle slice " << j << " " << newDocSlice.valueAt(j).typeName();
             VPackSlice kSl = newDocSlice.getNthKey(j, false);
 
             if (kSl.isString() && "hex" == kSl.copyString() ) {
@@ -612,53 +598,50 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
 
               LOG(INFO) << "VPackValueLength " << nStr;
 
-              char const* pStr      = value.getString(nStr);
-
-              uint bytesLength = nStr / 2;
-              if (nStr % 2 == 1) bytesLength++; // 5 chars -> 3 bytes -> equal 6 chars
-
-              LOG(INFO) << "in string length is " << nStr;
-
+              char const* pStr = value.getString(nStr);
+              uint8_t bytesLength = nStr / 2;
+              if (nStr % 2 == 1) bytesLength++; // 5 chars -> 3 bytes to equal 6 chars
               uint8_t *pBytes = new uint8_t[bytesLength];
-              uint idx = 0;
+
+              LOG(INFO) << "Stringlength " << nStr << " Bytes Length " << bytesLength;
+
+              uint8_t idx = 0;
+              uint8_t val = 0;
 
               // iterate over the string
-              for(uint j = 0; j < nStr; j++) {
-                  uint8_t var = (uint8_t)pStr[j];
+              for(uint8_t j = 0; j < nStr; j++) {
+                  val = pStr[j];
 
-                  if (47 < var && var < 58) {
-                      var -= 48;
-                  } else if (96 < var && var < 103) {
-                      var -= 87;
-                  }
+                  if      (val > 96) val -= 87; // ASCII A-F
+                  else if (val > 64) val -= 55; // ASCII a-f
+                  else if (val > 47) val -= 48; // ASCII 0-9
 
-                  LOG(INFO) << "bits " << std::bitset<8>(var);
+                  // LOG(INFO) << "bits " << std::bitset<8>(var);
 
                   if ( j % 2 == 0) {
-                    pBytes[idx] = (var << 4);
+                    pBytes[idx] = val << 4;
                   } else {
-                      pBytes[idx] |= var;
+                      pBytes[idx] |= val;
                       idx++;
                   }
               } // for
-
-              LOG(INFO) << "String -> Binary:";
-              for(j = 0; j < bytesLength; j++) {
-                LOG(INFO) << std::bitset<8>(pBytes[j]);
-              }
-
               // raise(SIGSEGV);
 
               newDoc.add(kSl.copyString(),  VPackValuePair(pBytes, bytesLength) );
-
-            //  newDoc.add(kSl.copyString(), VPackValue("here we have binary u know") );
             } else {
               newDoc.add(kSl.copyString(), newDocSlice.valueAt(j) );
             }
           } // for
           newDoc.close();
+        } // if binary
+        if (!newDoc.isEmpty()) newDocSlice = newDoc.slice(); // replace with hexified
 
-          VPackBuilder tmp = VPackCollection::merge(newDoc.slice(), keyBuilder.slice(), false, false);
+        if (hasKeyVariable) { // we have a sepearte _key value
+          keyBuilder.clear();
+          keyBuilder.openObject();
+          keyBuilder.add(StaticStrings::KeyString, VPackValue(key));
+          keyBuilder.close();
+          VPackBuilder tmp = VPackCollection::merge(newDocSlice, keyBuilder.slice(), false, false);
           if (isMultiple) {
             object.add(tmp.slice());
           } else {
@@ -668,7 +651,7 @@ AqlItemBlock* UpdateBlock::work(std::vector<AqlItemBlock*>& blocks) {
         else {
           // use original slice for updating
           LOG(INFO) << "use original slice for updating";
-          object.add(a.slice());
+          object.add(newDocSlice);
         }
       } else {
         handleResult(errorCode, ep->_options.ignoreErrors, &errorMessage);
