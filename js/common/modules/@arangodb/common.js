@@ -478,6 +478,9 @@ exports.checkAvailableVersions = function (version) {
     version = internal.version;
   }
 
+  log(`You are using ${version}, version check disabled`);
+  return;
+
   if (version.match(/beta|alpha|preview|devel/) !== null) {
     log("You are using an alpha/beta/preview version ('" + version + "') of ArangoDB");
     return;
