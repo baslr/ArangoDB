@@ -617,17 +617,20 @@ fi
 
 if test "${DOWNLOAD_STARTER}" == 1; then
     # we utilize https://developer.github.com/v3/repos/ to get the newest release:
-    STARTER_REV=`curl -s https://api.github.com/repos/arangodb-helper/ArangoDBStarter/releases |grep tag_name |head -n 1 |${SED} -e "s;.*: ;;" -e 's;";;g' -e 's;,;;'`
-    STARTER_URL=`curl -s https://api.github.com/repos/arangodb-helper/ArangoDBStarter/releases/tags/${STARTER_REV} |grep browser_download_url |grep "${OSNAME}" |${SED} -e "s;.*: ;;" -e 's;";;g' -e 's;,;;'`
+    STARTER_REV=`curl -s https://api.github.com/repos/arangodb-helper/arangodb/releases |grep tag_name |head -n 1 |${SED} -e "s;.*: ;;" -e 's;";;g' -e 's;,;;'`
+    STARTER_URL=`curl -s https://api.github.com/repos/arangodb-helper/arangodb/releases/tags/${STARTER_REV} |grep browser_download_url |grep "${OSNAME}" |${SED} -e "s;.*: ;;" -e 's;";;g' -e 's;,;;'`
     if test -n "${STARTER_URL}"; then
-        curl -LO "${STARTER_URL}"
-        FN=`echo ${STARTER_URL} |${SED} "s;.*/;;"`
+        mkdir -p ${BUILD_DIR}
         if test "${isCygwin}" == 1; then
             TN=arangodb.exe
         else
             TN=arangodb
         fi
-        mkdir -p ${BUILD_DIR}
+        if test -f ${TN}; then
+            rm -f ${TN}
+        fi
+        curl -LO "${STARTER_URL}"
+        FN=`echo ${STARTER_URL} |${SED} "s;.*/;;"`
         mv ${FN} ${BUILD_DIR}/${TN}
         chmod a+x ${BUILD_DIR}/${TN}
     fi
@@ -667,6 +670,7 @@ ${MAKE_CMD_PREFIX} ${MAKE} ${MAKE_PARAMS}
 (cd ${SOURCE_DIR}; git rev-parse HEAD > last_compiled_version.sha)
 
 if [ -n "$CPACK"  -a -n "${TARGET_DIR}" ];  then
+    ${PACKAGE_MAKE} clean_packages || exit 1
     ${PACKAGE_MAKE} packages || exit 1
 fi
 # and install

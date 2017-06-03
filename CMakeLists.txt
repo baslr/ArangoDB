@@ -81,7 +81,7 @@ endif ()
 
 set(ARANGODB_VERSION_MAJOR      "3")
 set(ARANGODB_VERSION_MINOR      "1")
-set(ARANGODB_VERSION_REVISION   "19")
+set(ARANGODB_VERSION_REVISION   "21")
 set(ARANGODB_PACKAGE_REVISION   "1")
 
 set(ARANGODB_VERSION
@@ -94,7 +94,7 @@ set(ARANGODB_DISPLAY_NAME       "ArangoDB")
 set(ARANGODB_URL_INFO_ABOUT     "https://www.arangodb.com")
 set(ARANGODB_HELP_LINK          "https://docs.arangodb.com/${ARANGODB_VERSION_MAJOR}.${ARANGODB_VERSION_MINOR}/")
 set(ARANGODB_CONTACT            "hackers@arangodb.com")
-set(ARANGODB_FRIENDLY_STRING    "ArangoDB - the multi-model database")
+set(ARANGODB_FRIENDLY_STRING    "ArangoDB - the native multi-model NoSQL database")
 
 # MSVC
 set(ARANGO_BENCH_FRIENDLY_STRING   "arangobench - stress test program")
