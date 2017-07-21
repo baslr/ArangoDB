@@ -1,9 +1,70 @@
+v3.1.25 (2017-07-12)
+--------------------
+
+* fixed one medium priority and two low priority security user interface
+  issues found by owasp zap.
+
+* fixed parallel access to list of failed servers
+
+* fixed ID lookup for secondaries
+
+* removed secondaries from local and distributed cluster deployments
+
+
+v3.1.24 (2017-07-04)
+--------------------
+
+* fixed one more LIMIT issue in traversals
+
+* fixed issue #2684: Legacy service UI not working
+
+
+v3.1.23 (2017-06-19)
+--------------------
+
+* potentially fixed issue #2559: Duplicate _key generated on insertion
+
+* fix races in SSL communication code
+
+* fix invalid results (too many) when a skipping LIMIT was used for a
+  traversal. `LIMIT x` or `LIMIT 0, x` were not affected, but `LIMIT s, x`
+  may have returned too many results
+
+* fix invalid first group results for sorted AQL COLLECT when LIMIT
+  was used
+
+* fix invalid locking in JWT authentication cache, which could have
+  crashed the server
+
+* fix undefined behavior in traverser when traversals were used inside
+  a FOR loop
+
+
+v3.1.22 (2017-06-07)
+--------------------
+
+* fixed issue #2505: Problem with export + report of a bug
+
+* documented changed behavior of WITH
+
+* fixed ui glitch in aardvark
+
+* avoid agency compaction bug
+
+* fixed issue #2283: disabled proxy communication internally
+
+* agency no longer responds prematurely when started from persistence
+
+* agency handles huge arrays of transactions
+
+
 v3.1.21 (2017-05-22)
 --------------------
 
 * fixed issue #2488:  AQL operator IN error when data use base64 chars
 
 * more randomness in seeding RNG
+
 
 v3.1.20 (2017-05-16)
 --------------------
@@ -22,6 +83,7 @@ v3.1.20 (2017-05-16)
 
 * forward SIG_HUP in supervisor process to the server process to fix logrotaion
   You need to stop the remaining arangod server process manually for the upgrade to work.
+
 
 v3.1.19 (2017-04-28)
 --------------------
@@ -45,6 +107,7 @@ v3.1.19 (2017-04-28)
 
 * reduce the maximal wait time in exponential backoff when waiting for locks.
   This improves fairness of the collection locks under high load.
+
 
 v3.1.18 (2017-04-18)
 --------------------
@@ -82,7 +145,7 @@ v3.1.17 (2017-04-04)
 
 * fixed issue #2403
 
-  this restores the default read-cache size value for RAM sizes of less than 
+  this restores the default read-cache size value for RAM sizes of less than
   4 GB to the default size the read cache had in 3.1.15 and before. 3.1.16
   decreased the default value too much for small RAM sizes.
 
@@ -126,6 +189,7 @@ v3.1.16 (2017-03-27)
 * fixed a bug with restarted servers indicating status as "STARTUP"
   rather that "SERVING" in Nodes UI.
 
+
 v3.1.15 (2017-03-20)
 --------------------
 
@@ -165,6 +229,7 @@ v3.1.14 (2017-03-13)
 * minor UI fixes
 
 * FailedServer job with breaking bug
+
 
 v3.1.13 (2017-03-06)
 --------------------
@@ -308,15 +373,15 @@ shards.
 
       db._query("FOR i IN 1..100000 SORT i RETURN i", {}, { options: { memoryLimit: 100000 } });
 
-  This option limits the default maximum amount of memory (in bytes) that a single 
+  This option limits the default maximum amount of memory (in bytes) that a single
   AQL query can use.
   When a single AQL query reaches the specified limit value, the query will be
   aborted with a *resource limit exceeded* exception. In a cluster, the memory
   accounting is done per shard, so the limit value is effectively a memory limit per
   query per shard.
 
-  The global limit value can be overriden per query by setting the *memoryLimit* 
-  option value for individual queries when running an AQL query. 
+  The global limit value can be overriden per query by setting the *memoryLimit*
+  option value for individual queries when running an AQL query.
 
 * added server startup option `--query.memory-limit`
 
@@ -329,10 +394,10 @@ shards.
 * added option -D to define a configuration file environment key=value
 
 * changed encoding behavior for URLs encoded in the C++ code of ArangoDB:
-  previously the special characters `-`, `_`, `~` and `.` were returned as-is 
-  after URL-encoding, now `.` will be encoded to be `%2e`. 
+  previously the special characters `-`, `_`, `~` and `.` were returned as-is
+  after URL-encoding, now `.` will be encoded to be `%2e`.
   This also changes the behavior of how incoming URIs are processed: previously
-  occurrences of `..` in incoming request URIs were collapsed (e.g. `a/../b/` was 
+  occurrences of `..` in incoming request URIs were collapsed (e.g. `a/../b/` was
   collapsed to a plain `b/`). Now `..` in incoming request URIs are not collapsed.
 
 * improve cluster stability in various ways
@@ -438,7 +503,7 @@ v3.1.4 (2016-12-08)
 
 * agency RAFT timing estimates more conservative in waitForSync
   scenario
-  
+
 * agency RAFT timing estimates capped at maximum 2.0/10.0 for low/high
 
 
@@ -466,6 +531,7 @@ Now they state correctly how many documents were fetched from the index and how 
 have been filtered.
 
 * Prevent uniform shard distribution when replicationFactor == numServers
+
 
 v3.1.1 (2016-11-15)
 -------------------
@@ -549,7 +615,7 @@ v3.1.1 (2016-11-15)
   produced an empty result
 
 * disallow updating `_from` and `_to` values of edges in Smart Graphs. Updating these
-  attributes would lead to potential redistribution of edges to other shards, which must be 
+  attributes would lead to potential redistribution of edges to other shards, which must be
   avoided.
 
 * fixed issue #2148
@@ -563,6 +629,20 @@ v3.1.1 (2016-11-15)
 
 v3.1.0 (2016-10-29)
 -------------------
+
+* AQL breaking change in cluster:
+
+  from ArangoDB 3.1 onwards `WITH` is required for traversals in a
+  clustered environment in order to avoid deadlocks.
+
+  Note that for queries that access only a single collection or that have all
+  collection names specified somewhere else in the query string, there is no
+  need to use *WITH*. *WITH* is only useful when the AQL query parser cannot
+  automatically figure out which collections are going to be used by the query.
+  *WITH* is only useful for queries that dynamically access collections, e.g.
+  via traversals, shortest path operations or the *DOCUMENT()* function.
+
+  more info can be found [here](https://github.com/arangodb/arangodb/blob/devel/Documentation/Books/AQL/Operations/With.md)
 
 * added AQL function `DISTANCE` to calculate the distance between two arbitrary
   coordinates (haversine formula)
@@ -920,6 +1000,7 @@ v3.0.5 (2016-08-18)
 * Fixed bug in handling of duplicates and overlapping logs
 
 * Fixed bug in supervision take over after leadership change.
+
 
 v3.0.4 (2016-08-01)
 -------------------
@@ -1439,7 +1520,7 @@ v2.8.12 (XXXX-XX-XX)
 v2.8.11 (2016-07-13)
 --------------------
 
-* fixed array index batch insertion issues for hash indexes that caused problems when 
+* fixed array index batch insertion issues for hash indexes that caused problems when
   no elements remained for insertion
 
 * fixed issue #1937
@@ -1881,9 +1962,9 @@ v2.8.0-beta7 (2016-01-06)
 * fixes for AQL optimizer and traversal
 
 * added `--create-collection-type` option to arangoimp
- 
-  This allows specifying the type of the collection to be created when 
-  `--create-collection` is set to `true`. 
+
+  This allows specifying the type of the collection to be created when
+  `--create-collection` is set to `true`.
 
 * Foxx export cache should no longer break if a broken app is loaded in the
   web admin interface.

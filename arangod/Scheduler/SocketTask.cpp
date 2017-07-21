@@ -86,6 +86,16 @@ SocketTask::~SocketTask() {
   if (err) {
     LOG_TOPIC(ERR, Logger::COMMUNICATION) << "unable to cancel _keepAliveTimer";
   }
+
+
+  if (_peer) {
+    _peer->close(err);
+
+    if (err && err != boost::asio::error::not_connected) {
+      LOG_TOPIC(DEBUG, Logger::COMMUNICATION)
+          << "SocketTask: close send stream failed with: " << err.message();
+    }
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -152,45 +162,47 @@ void SocketTask::writeWriteBuffer() {
   if (_writeBuffer.empty()) {
     return;
   }
-
+    
   size_t total = _writeBuffer._buffer->length();
   size_t written = 0;
 
-  boost::system::error_code err;
-  err.clear();
+  if (!_peer->isEncrypted()) {
+    boost::system::error_code err;
+    err.clear();
 
-  while (true) {
-    RequestStatistics::SET_WRITE_START(_writeBuffer._statistics);
-    written = _peer->write(_writeBuffer._buffer, err);
+    while (true) {
+      RequestStatistics::SET_WRITE_START(_writeBuffer._statistics);
+      written = _peer->write(_writeBuffer._buffer, err);
 
-    if (err) {
-      break;
+      if (err) {
+        break;
+      }
+
+      RequestStatistics::ADD_SENT_BYTES(_writeBuffer._statistics, written);
+
+      if (written != total) {
+        // unable to write everything at once, might be a lot of data
+        // above code does not update the buffer positon
+        break;
+      }
+
+      if (!completedWriteBuffer()) {
+        return;
+      }
+
+      // try to send next buffer
+      total = _writeBuffer._buffer->length();
+      written = 0;
     }
 
-    RequestStatistics::ADD_SENT_BYTES(_writeBuffer._statistics, written);
-
-    if (written != total) {
-      // unable to write everything at once, might be a lot of data
-      // above code does not update the buffer positon
-      break;
-    }
-
-    if (!completedWriteBuffer()) {
-      return;
-    }
-
-    // try to send next buffer
-    total = _writeBuffer._buffer->length();
-    written = 0;
-  }
-
-  // write could have blocked which is the only acceptable error
-  if (err && err != ::boost::asio::error::would_block) {
-    LOG_TOPIC(DEBUG, Logger::COMMUNICATION)
+    // write could have blocked which is the only acceptable error
+    if (err && err != ::boost::asio::error::would_block) {
+      LOG_TOPIC(DEBUG, Logger::COMMUNICATION)
         << "SocketTask::addWriteBuffer (write_some) - write on stream "
         << " failed with: " << err.message();
-    closeStream();
-    return;
+      closeStream();
+      return;
+    }
   }
 
   // so the code could have blocked at this point or not all data
@@ -263,15 +275,7 @@ void SocketTask::closeStream() {
 
     _closedReceive = true;
   }
-
-  _peer->close(err);
-
-  if (err && err != boost::asio::error::not_connected) {
-    LOG_TOPIC(DEBUG, Logger::COMMUNICATION)
-        << "SocketTask::CloseStream - shutdown send stream "
-        << "failed with: " << err.message();
-  }
-
+  
   _closeRequested = false;
   _keepAliveTimer.cancel();
   _keepAliveTimerActive = false;
@@ -399,46 +403,48 @@ bool SocketTask::processAll() {
 
 void SocketTask::asyncReadSome() {
   MUTEX_LOCKER(locker, _readLock);
+    
+  if (_abandoned) {
+    return;
+  }
 
-  try {
-    if (_abandoned) {
-      return;
-    }
+  if (!_peer->isEncrypted()) {
+    try {
+      size_t const MAX_DIRECT_TRIES = 2;
+      size_t n = 0;
 
-    size_t const MAX_DIRECT_TRIES = 2;
-    size_t n = 0;
-
-    while (++n <= MAX_DIRECT_TRIES) {
-      if (!reserveMemory()) {
-        LOG_TOPIC(TRACE, Logger::COMMUNICATION) << "failed to reserve memory";
-        return;
-      }
-
-      if (!trySyncRead()) {
-        if (n < MAX_DIRECT_TRIES) {
-#ifdef TRI_HAVE_SCHED_H
-          sched_yield();
-#endif
+      while (++n <= MAX_DIRECT_TRIES) {
+        if (!reserveMemory()) {
+          LOG_TOPIC(TRACE, Logger::COMMUNICATION) << "failed to reserve memory";
+          return;
         }
 
-        continue;
+        if (!trySyncRead()) {
+          if (n < MAX_DIRECT_TRIES) {
+#ifdef TRI_HAVE_SCHED_H
+            sched_yield();
+#endif
+          }
+
+          continue;
+        }
+
+        // ignore the result of processAll, try to read more bytes down below
+        processAll();
+        compactify();
       }
+    } catch (boost::system::system_error& err) {
+      LOG_TOPIC(DEBUG, Logger::COMMUNICATION) << "i/o stream failed with: "
+        << err.what();
 
-      // ignore the result of processAll, try to read more bytes down below
-      processAll();
-      compactify();
+      closeStream();
+      return;
+    } catch (...) {
+      LOG_TOPIC(DEBUG, Logger::COMMUNICATION) << "general error on stream";
+
+      closeStream();
+      return;
     }
-  } catch (boost::system::system_error& err) {
-    LOG_TOPIC(DEBUG, Logger::COMMUNICATION) << "i/o stream failed with: "
-                                            << err.what();
-
-    closeStream();
-    return;
-  } catch (...) {
-    LOG_TOPIC(DEBUG, Logger::COMMUNICATION) << "general error on stream";
-
-    closeStream();
-    return;
   }
 
   // try to read more bytes
