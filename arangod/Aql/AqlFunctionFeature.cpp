@@ -250,7 +250,7 @@ void AqlFunctionFeature::addStringFunctions() {
        &Functions::CharLength});
   add({"LOWER", ".", true, false, true, true, &Functions::Lower});
   add({"UPPER", ".", true, false, true, true, &Functions::Upper});
-  add({"SUBSTRING", ".,.|.", true, false, true, true});
+  add({"SUBSTRING", ".,.|.", true, false, true, true, &Functions::Substring});
   add({"CONTAINS", ".,.|.", true, false, true, true,
        &Functions::Contains});
   add({"LIKE", ".,.|.", true, false, true, true,
