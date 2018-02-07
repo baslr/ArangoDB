@@ -471,6 +471,9 @@ exports.checkAvailableVersions = function(version) {
     version = internal.version;
   }
 
+  log(`You are using ${version}, version check disabled`);
+  return;
+
   if (version.match(/beta|alpha|preview|milestone|devel/) !== null) {
     log(
       "You are using a milestone/alpha/beta/preview version ('" +
