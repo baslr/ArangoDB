@@ -88,7 +88,7 @@ Query::Query(bool contextOwnedByExterior, TRI_vocbase_t* vocbase,
       _state(QueryExecutionState::ValueType::INVALID_STATE),
       _trx(nullptr),
       _warnings(),
-      _startTime(TRI_microtime()),
+      _startTime(TRI_microtime_ns()),
       _part(part),
       _contextOwnedByExterior(contextOwnedByExterior),
       _killed(false),
@@ -118,12 +118,12 @@ Query::Query(bool contextOwnedByExterior, TRI_vocbase_t* vocbase,
   int64_t tracing = _queryOptions.tracing;
   if (tracing > 0) {
     LOG_TOPIC(INFO, Logger::QUERIES)
-      << TRI_microtime() - _startTime << " "
+      << TRI_microtime_ns() - _startTime << " "
       << "Query::Query queryString: " << _queryString
       << " this: " << (uintptr_t) this;
   } else {
     LOG_TOPIC(DEBUG, Logger::QUERIES)
-      << TRI_microtime() - _startTime << " "
+      << TRI_microtime_ns() - _startTime << " "
       << "Query::Query queryString: " << _queryString
       << " this: " << (uintptr_t) this;
   }
@@ -167,7 +167,7 @@ Query::Query(bool contextOwnedByExterior, TRI_vocbase_t* vocbase,
       _state(QueryExecutionState::ValueType::INVALID_STATE),
       _trx(nullptr),
       _warnings(),
-      _startTime(TRI_microtime()),
+      _startTime(TRI_microtime_ns()),
       _part(part),
       _contextOwnedByExterior(contextOwnedByExterior),
       _killed(false),
@@ -184,7 +184,7 @@ Query::Query(bool contextOwnedByExterior, TRI_vocbase_t* vocbase,
   }
 
   LOG_TOPIC(DEBUG, Logger::QUERIES)
-      << TRI_microtime() - _startTime << " "
+      << TRI_microtime_ns() - _startTime << " "
       << "Query::Query queryStruct: " << queryStruct->slice().toJson()
       << " this: " << (uintptr_t) this;
   if (options != nullptr && !options->isEmpty() && !options->slice().isNone()) {
@@ -200,7 +200,7 @@ Query::Query(bool contextOwnedByExterior, TRI_vocbase_t* vocbase,
 Query::~Query() {
   if (_queryOptions.tracing > 0) {
     LOG_TOPIC(INFO, Logger::QUERIES)
-      << TRI_microtime() - _startTime << " "
+      << TRI_microtime_ns() - _startTime << " "
       << "Query::~Query queryString: "
       << " this: " << (uintptr_t) this;
   }
@@ -216,7 +216,7 @@ Query::~Query() {
     delete it.second;
   }
   LOG_TOPIC(DEBUG, Logger::QUERIES)
-      << TRI_microtime() - _startTime << " "
+      << TRI_microtime_ns() - _startTime << " "
       << "Query::~Query this: " << (uintptr_t) this;
   AqlFeature::unlease();
 }
@@ -268,7 +268,7 @@ Query* Query::clone(QueryPart part, bool withPlan) {
 
 void Query::setExecutionTime() {
   if (_engine != nullptr) {
-    _engine->_stats.setExecutionTime(TRI_microtime() - _startTime);
+    _engine->_stats.setExecutionTime(TRI_microtime_ns() - _startTime);
   }
 }
 
@@ -417,7 +417,7 @@ void Query::prepare(QueryRegistry* registry, uint64_t queryHash) {
 /// to be able to only prepare a query from VelocyPack and then store it in the
 /// QueryRegistry.
 ExecutionPlan* Query::prepare() {
-  LOG_TOPIC(DEBUG, Logger::QUERIES) << TRI_microtime() - _startTime << " "
+  LOG_TOPIC(DEBUG, Logger::QUERIES) << TRI_microtime_ns() - _startTime << " "
                                     << "Query::prepare"
                                     << " this: " << (uintptr_t) this;
   std::unique_ptr<ExecutionPlan> plan;
@@ -525,7 +525,7 @@ ExecutionPlan* Query::prepare() {
 
 /// @brief execute an AQL query
 QueryResult Query::execute(QueryRegistry* registry) {
-  LOG_TOPIC(DEBUG, Logger::QUERIES) << TRI_microtime() - _startTime << " "
+  LOG_TOPIC(DEBUG, Logger::QUERIES) << TRI_microtime_ns() - _startTime << " "
                                     << "Query::execute"
                                     << " this: " << (uintptr_t) this;
   TRI_ASSERT(registry != nullptr);
@@ -647,7 +647,7 @@ QueryResult Query::execute(QueryRegistry* registry) {
       throw;
     }
     
-    LOG_TOPIC(DEBUG, Logger::QUERIES) << TRI_microtime() - _startTime << " "
+    LOG_TOPIC(DEBUG, Logger::QUERIES) << TRI_microtime_ns() - _startTime << " "
                                       << "Query::execute: before _trx->commit"
                                       << " this: " << (uintptr_t) this;
 
@@ -657,14 +657,14 @@ QueryResult Query::execute(QueryRegistry* registry) {
     }
     
     LOG_TOPIC(DEBUG, Logger::QUERIES)
-        << TRI_microtime() - _startTime << " "
+        << TRI_microtime_ns() - _startTime << " "
         << "Query::execute: before cleanupPlanAndEngine"
         << " this: " << (uintptr_t) this;
    
     QueryResult result; 
     result.context = _trx->transactionContext();
 
-    _engine->_stats.setExecutionTime(runTime());
+    // _engine->_stats.setExecutionTime(runTime());
     enterState(QueryExecutionState::ValueType::FINALIZATION);
 
     auto stats = std::make_shared<VPackBuilder>();
@@ -676,9 +676,9 @@ QueryResult Query::execute(QueryRegistry* registry) {
 
     // patch stats in place
     // we do this because "executionTime" should include the whole span of the execution and we have to set it at the very end
-    double now = TRI_microtime();
-    double const rt = runTime(now);
-    basics::VelocyPackHelper::patchDouble(result.stats->slice().get("executionTime"), rt);
+    int64_t now = TRI_microtime_ns();
+    int64_t const rt = runTime(now);
+    basics::VelocyPackHelper::patchDouble(result.stats->slice().get("executionTime"), static_cast<double>(rt) / 1000000 );
 
     if (_profile != nullptr && _queryOptions.profile) {
       _profile->setEnd(QueryExecutionState::ValueType::FINALIZATION, now);
@@ -715,7 +715,7 @@ QueryResult Query::execute(QueryRegistry* registry) {
 
 // execute an AQL query: may only be called with an active V8 handle scope
 QueryResultV8 Query::executeV8(v8::Isolate* isolate, QueryRegistry* registry) {
-  LOG_TOPIC(DEBUG, Logger::QUERIES) << TRI_microtime() - _startTime << " "
+  LOG_TOPIC(DEBUG, Logger::QUERIES) << TRI_microtime_ns() - _startTime << " "
                                     << "Query::executeV8"
                                     << " this: " << (uintptr_t) this;
   TRI_ASSERT(registry != nullptr);
@@ -835,14 +835,14 @@ QueryResultV8 Query::executeV8(v8::Isolate* isolate, QueryRegistry* registry) {
         }
       }
     } catch (...) {
-      LOG_TOPIC(DEBUG, Logger::QUERIES) << TRI_microtime() - _startTime << " "
+      LOG_TOPIC(DEBUG, Logger::QUERIES) << TRI_microtime_ns() - _startTime << " "
                                         << "got an exception executing "
                                         << " this: " << (uintptr_t) this;
       delete value;
       throw;
     }
 
-    LOG_TOPIC(DEBUG, Logger::QUERIES) << TRI_microtime() - _startTime << " "
+    LOG_TOPIC(DEBUG, Logger::QUERIES) << TRI_microtime_ns() - _startTime << " "
                                       << "Query::executeV8: before _trx->commit"
                                       << " this: " << (uintptr_t) this;
 
@@ -852,13 +852,13 @@ QueryResultV8 Query::executeV8(v8::Isolate* isolate, QueryRegistry* registry) {
     }
 
     LOG_TOPIC(DEBUG, Logger::QUERIES)
-        << TRI_microtime() - _startTime << " "
+        << TRI_microtime_ns() - _startTime << " "
         << "Query::executeV8: before cleanupPlanAndEngine"
         << " this: " << (uintptr_t) this;
 
     result.context = _trx->transactionContext();
 
-    _engine->_stats.setExecutionTime(runTime());
+    // _engine->_stats.setExecutionTime(runTime());
     enterState(QueryExecutionState::ValueType::FINALIZATION);
 
     auto stats = std::make_shared<VPackBuilder>();
@@ -869,9 +869,9 @@ QueryResultV8 Query::executeV8(v8::Isolate* isolate, QueryRegistry* registry) {
 
     // patch executionTime stats value in place
     // we do this because "executionTime" should include the whole span of the execution and we have to set it at the very end
-    double now = TRI_microtime();
-    double const rt = runTime(now);
-    basics::VelocyPackHelper::patchDouble(result.stats->slice().get("executionTime"), rt);
+    int64_t now = TRI_microtime_ns();
+    int64_t const rt = runTime(now);
+    basics::VelocyPackHelper::patchDouble(result.stats->slice().get("executionTime"), static_cast<double>(rt) / 1000000 );
 
     if (_profile != nullptr && _queryOptions.profile) {
       _profile->setEnd(QueryExecutionState::ValueType::FINALIZATION, now);
@@ -1101,7 +1101,7 @@ void Query::exitContext() {
 /// @brief returns statistics for current query.
 void Query::getStats(VPackBuilder& builder) {
   if (_engine != nullptr) {
-    _engine->_stats.setExecutionTime(TRI_microtime() - _startTime);
+    _engine->_stats.setExecutionTime(TRI_microtime_ns() - _startTime);
     _engine->_stats.toVelocyPack(builder, _queryOptions.fullCount);
   } else {
     ExecutionStats::toVelocyPackStatic(builder);
@@ -1246,7 +1246,7 @@ std::string Query::buildErrorMessage(int errorCode) const {
 
 /// @brief enter a new state
 void Query::enterState(QueryExecutionState::ValueType state) {
-  LOG_TOPIC(DEBUG, Logger::QUERIES) << TRI_microtime() - _startTime << " "
+  LOG_TOPIC(DEBUG, Logger::QUERIES) << TRI_microtime_ns() - _startTime << " "
                                     << "Query::enterState: " << state
                                     << " this: " << (uintptr_t) this;
   if (_profile != nullptr) {

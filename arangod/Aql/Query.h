@@ -114,13 +114,13 @@ class Query {
   ResourceMonitor* resourceMonitor() { return &_resourceMonitor; }
 
   /// @brief return the start timestamp of the query
-  double startTime() const { return _startTime; }
+  uint64_t startTime() const { return _startTime; }
   
   /// @brief return the current runtime of the query
-  double runTime(double now) const { return now - _startTime; }
+  uint64_t runTime(int64_t now) const { return now - _startTime; }
   
   /// @brief return the current runtime of the query
-  double runTime() const { return runTime(TRI_microtime()); }
+  uint64_t runTime() const { return runTime(TRI_microtime_ns()); }
 
   /// @brief whether or not the query is killed
   inline bool killed() const { return _killed; }
@@ -350,7 +350,7 @@ class Query {
   RegexCache _regexCache;
  
   /// @brief query start time
-  double _startTime;
+  int64_t _startTime;
 
   /// @brief the query part
   QueryPart const _part;

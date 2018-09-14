@@ -154,6 +154,11 @@ double TRI_microtime() {
     std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
+int64_t TRI_microtime_ns() {
+  return std::chrono::duration<int64_t, std::nano>( // time since epoch in ns
+      std::chrono::system_clock::now().time_since_epoch() ) .count();
+  }
+
 size_t TRI_numberProcessors() {
 #ifdef TRI_SC_NPROCESSORS_ONLN
   auto n = sysconf(_SC_NPROCESSORS_ONLN);

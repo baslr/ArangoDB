@@ -63,12 +63,12 @@ QueryProfile::~QueryProfile() {
 }
 
 /// @brief sets a state to done
-double QueryProfile::setDone(QueryExecutionState::ValueType state) {
-  double const now = TRI_microtime();
+int64_t QueryProfile::setDone(QueryExecutionState::ValueType state) {
+  int64_t const now = TRI_microtime_ns();
 
   if (state != QueryExecutionState::ValueType::INVALID_STATE) {
     // record duration of state
-    timers[static_cast<int>(state)] = now - stamp;
+    timers[static_cast<int>(state)] = (double)(now - stamp) / 1000000;
   }
 
   // set timestamp
@@ -77,8 +77,8 @@ double QueryProfile::setDone(QueryExecutionState::ValueType state) {
 }
 
 /// @brief sets the absolute end time for an execution state
-void QueryProfile::setEnd(QueryExecutionState::ValueType state, double time) {
-  timers[static_cast<int>(state)] = time - stamp;
+void QueryProfile::setEnd(QueryExecutionState::ValueType state, int64_t time) {
+  timers[static_cast<int>(state)] = (double)(time - stamp) / 1000000;
 }
 
 /// @brief convert the profile to VelocyPack
@@ -89,9 +89,9 @@ std::shared_ptr<VPackBuilder> QueryProfile::toVelocyPack() {
   for (auto state : ENUM_ITERATOR(QueryExecutionState::ValueType, INITIALIZATION, FINALIZATION)) {
     double const value = timers[static_cast<size_t>(state)];
 
-    if (value >= 0.0) {
+    // if (value >= 0.0) {
       result->add(QueryExecutionState::toString(state), VPackValue(value));
-    }
+    // }
   }
   result->close();
   

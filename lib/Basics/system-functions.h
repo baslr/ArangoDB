@@ -53,6 +53,9 @@ time_t TRI_timegm(struct tm*);
 // seconds with microsecond resolution
 double TRI_microtime();
 
+// ns
+int64_t TRI_microtime_ns();
+
 // number of processors or 0
 size_t TRI_numberProcessors();
 

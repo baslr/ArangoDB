@@ -48,7 +48,7 @@ struct ExecutionStats {
   static void toVelocyPackStatic(arangodb::velocypack::Builder&);
   
   /// @brief sets query execution time from the outside
-  void setExecutionTime(double value) { executionTime = value; }
+  void setExecutionTime(uint64_t value) { executionTime = value; }
 
   /// @brief sumarize two sets of ExecutionStats
   void add(ExecutionStats const& summand) {
@@ -72,7 +72,7 @@ struct ExecutionStats {
     filtered = 0;
     httpRequests = 0;
     fullCount = 0;
-    executionTime = 0.0;
+    executionTime = 0;
   }
 
   /// @brief number of successfully executed write operations
@@ -98,7 +98,7 @@ struct ExecutionStats {
   
   /// @brief query execution time (wall-clock time). value will be set from 
   /// the outside
-  double executionTime;
+  int64_t executionTime;
 };
 }
 }

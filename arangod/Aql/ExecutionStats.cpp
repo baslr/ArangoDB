@@ -44,8 +44,8 @@ void ExecutionStats::toVelocyPack(VPackBuilder& builder, bool reportFullCount) c
     // fullCount is exceptional, as it may be hidden
     builder.add("fullCount", VPackValue(fullCount));
   }
-      
-  builder.add("executionTime", VPackValue(executionTime));
+
+  builder.add("executionTime", VPackValue( (static_cast<double>(executionTime)) / 1000000 )  );
   builder.close();
 }
 

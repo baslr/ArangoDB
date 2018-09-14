@@ -46,17 +46,17 @@ struct QueryProfile {
 
   ~QueryProfile();
 
-  double setDone(QueryExecutionState::ValueType);
+  int64_t setDone(QueryExecutionState::ValueType);
 
   /// @brief sets the absolute end time for an execution state
-  void setEnd(QueryExecutionState::ValueType state, double time);
+  void setEnd(QueryExecutionState::ValueType state, int64_t time);
 
   /// @brief convert the profile to VelocyPack
   std::shared_ptr<arangodb::velocypack::Builder> toVelocyPack();
 
   Query* query;
   std::array<double, static_cast<size_t>(QueryExecutionState::ValueType::INVALID_STATE)> timers;
-  double stamp;
+  int64_t stamp;
   bool tracked;
 };
 
